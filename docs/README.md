@@ -75,3 +75,7 @@ Keep variable names, types, defaults and output semantics stable. Introduce depr
 ### 10. Answer
 
 Publish a versioned module with README examples, compatibility matrix, tests, changelog and tagged releases. Consumers should pin versions rather than track main.
+
+## Complete zero-to-hero guide
+
+See [ZERO-TO-HERO.md](./ZERO-TO-HERO.md) for the business scenario, architecture walkthrough, tool-by-tool explanations, implementation sequence, practical commands, troubleshooting playbook and additional scenario-based interview questions with answers.
