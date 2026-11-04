@@ -32,3 +32,10 @@ jobs:
         run: terraform -chdir=envirnment/dev init -backend=false
       - name: Validate root module and child modules
         run: terraform -chdir=envirnment/dev validate
+
+      - name: Checkov IaC scan (advisory baseline)
+        uses: bridgecrewio/checkov-action@v12
+        with:
+          directory: .
+          framework: terraform
+          soft_fail: true
