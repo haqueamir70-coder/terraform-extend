@@ -1,62 +1,69 @@
-<div align="center">
+# Terraform Reusable Modules — Azure
 
-<img src="https://capsule-render.vercel.app/api?type=waving&color=0:1E293B,50:0D9488,100:5EEAD4&height=190&section=header&text=Terraform+Module+and+Environment+Practice&fontSize=34&fontColor=ffffff&animation=fadeIn" alt="Terraform module structure banner" width="100%" />
+> **Status:** Terraform learning project with typed module contracts, root composition, outputs, secure storage defaults, example inputs and GitHub Actions validation. This is a lab scaffold; no Azure deployment is claimed.
 
-<img src="https://readme-typing-svg.demolab.com/?font=Fira+Code&weight=600&size=17&pause=1200&color=00C7FF&center=true&vCenter=true&width=900&height=40&lines=Reusable+Modules+%E2%80%A2+Variables+%E2%80%A2+Environment+Separation" alt="Animated project tagline" />
+## Purpose
 
-[![Terraform](https://img.shields.io/badge/Terraform-IaC-7B42BC?style=for-the-badge&logo=terraform&logoColor=white)](https://developer.hashicorp.com/terraform)
-[![Azure](https://img.shields.io/badge/Microsoft-Azure-0078D4?style=for-the-badge&logo=microsoftazure&logoColor=white)](https://azure.microsoft.com/)
-[![Portfolio](https://img.shields.io/badge/Portfolio-MD%20Amirul-181717?style=for-the-badge&logo=github)](https://github.com/haqueamir70-coder)
+Demonstrate how a Terraform root module composes reusable Azure child modules using typed map/object inputs and exposes stable outputs for downstream stacks.
 
-</div>
-
-> **Portfolio project:** implementation status and limitations are documented below. The diagram describes the intended workflow/architecture and is not proof of a successful production deployment.
-
-## 🗺️ Architecture at a Glance
+## Architecture
 
 ```mermaid
-flowchart LR
-  A[Environment Root] --> B[Reusable Child Module]
-  B --> C[Azure Resources]
-  A --> D[Environment Variables]
-  C --> E[Outputs]
+flowchart TB
+  Vars[Environment inputs] --> Root[envirnment/dev root module]
+  Root --> RG[Resource Group module]
+  Root --> VNet[Virtual Network module]
+  Root --> Storage[Storage Account module]
+  RG --> Outputs[Root outputs]
+  VNet --> Outputs
+  Storage --> Outputs
 ```
 
----
+## Repository layout
 
-# Terraform Module and Environment Practice
+- child/azurem_resource_group — resource group module
+- child/azurem_vnet — virtual network module
+- child/azurerm_storage_account — storage account module
+- envirnment/dev — environment root module; historical directory spelling retained to avoid breaking references
+- .github/workflows/terraform-ci.yml — formatting, validation and advisory Checkov scan
 
-A small Terraform practice repository for exploring child modules and environment-specific configuration.
+## Module contracts
 
-## Current layout
+All child modules use typed map(object(...)) inputs and for_each, so callers can create multiple resources using stable logical keys. Resource group, VNet and storage account modules expose maps of resource IDs and names; the root module aggregates resource names.
 
-- `child/` — child-module directory
-- `envirnment/` — environment configuration directory (the directory name is preserved as it exists in the repository)
+## Prerequisites
 
-Review the files in these directories to identify the exact resources and module inputs currently configured.
+- Terraform CLI 1.6+
+- Azure CLI authenticated to a non-production test subscription
+- Azure permissions to create resource groups, VNets and storage accounts
 
-## Suggested workflow
+## Configure and validate
 
-From the relevant Terraform root module:
+From the repository root:
 
 ```bash
-terraform fmt -check -recursive
-terraform init
-terraform validate
-terraform plan
+cp envirnment/dev/terraform.tfvars.example envirnment/dev/terraform.tfvars
+terraform -chdir=envirnment/dev init
+terraform -chdir=envirnment/dev fmt -check -recursive
+terraform -chdir=envirnment/dev validate
+terraform -chdir=envirnment/dev plan
 ```
 
-Review the plan before applying anything to an Azure subscription. Use a test environment first.
+Edit the example storage account name before planning. Azure Storage account names are globally unique and must contain 3–24 lowercase letters and numbers. Ensure every resource uses the intended resource group and region.
 
-## Good next improvements
+Review the complete plan and estimated cost before applying. This repository does not configure a remote state backend; do not use this root as a shared or production state store.
 
-- Rename misspelled paths only after updating every reference and documenting the change.
-- Add a root README with architecture, prerequisites, and example commands.
-- Add explicit module inputs and outputs, variable validation, and examples.
-- Add a `.gitignore` that excludes local state, variable files, and generated Terraform directories.
-- Add CI checks for formatting and validation.
+## Security notes
 
-Never commit credentials, state files, or sensitive `terraform.tfvars` values.
+- Storage accounts default to HTTPS-only, TLS 1.2, shared-key access disabled and public network access disabled.
+- These storage settings require a private endpoint/VNet path or another approved private connectivity design before workloads can access the account. The module does not silently expose storage publicly.
+- Use remote state with access controls, encryption, versioning and locking before team use.
+- Never commit terraform.tfstate files, plan files, credentials or real terraform.tfvars.
+- The misspelled historical directory names are retained for compatibility; a future breaking cleanup should rename them consistently.
+
+## CI
+
+GitHub Actions checks formatting, initializes the environment without a remote backend, validates the composed configuration and runs an advisory Checkov scan. Triage Checkov findings before treating the baseline as a blocking security gate. CI does not deploy Azure resources.
 
 ## Author
 
