@@ -1,87 +1,113 @@
 <div align="center">
 
-<img src="https://capsule-render.vercel.app/api?type=waving&color=0:172554,50:7C3AED,100:38BDF8&height=190&section=header&text=Terraform+Reusable+Azure+Modules&fontSize=32&fontColor=ffffff&animation=fadeIn" alt="Terraform Reusable Azure Modules project banner" width="100%" />
+<img src="https://capsule-render.vercel.app/api?type=waving&color=0:17112F,45:6D28D9,100:38BDF8&height=215&section=header&text=Terraform%20Module%20Engineering&fontSize=35&fontColor=ffffff&animation=fadeIn" width="100%" alt="Terraform reusable Azure modules"/>
 
-<img src="https://readme-typing-svg.demolab.com/?font=Inter&weight=600&size=16&pause=1600&color=38BDF8&center=true&vCenter=true&width=900&height=36&lines=Terraform+Reusable+Azure+Modules+%E2%80%A2+Architecture+%E2%80%A2+Automation+%E2%80%A2+Security" alt="Animated project focus line" />
+### Typed contracts · Composable modules · Predictable outputs
 
-![Terraform](https://img.shields.io/badge/Infrastructure+as+Code-844FBA?style=for-the-badge&logo=terraform&logoColor=white) ![Azure](https://img.shields.io/badge/Microsoft+Azure-0078D4?style=for-the-badge&logo=microsoftazure&logoColor=white) ![Modules](https://img.shields.io/badge/Reusable+Architecture-0F766E?style=for-the-badge)
+[![Terraform](https://img.shields.io/badge/Terraform-844FBA?style=for-the-badge&logo=terraform&logoColor=white)](https://developer.hashicorp.com/terraform)
+[![Azure](https://img.shields.io/badge/Microsoft_Azure-0078D4?style=for-the-badge&logo=microsoftazure&logoColor=white)](https://azure.microsoft.com/)
+[![IaC](https://img.shields.io/badge/Pattern-Reusable_Modules-0F766E?style=for-the-badge)](https://developer.hashicorp.com/terraform/language/modules)
+
+**A Terraform learning lab focused on module interface design: typed map/object inputs, `for_each` resource composition, stable outputs and environment-level orchestration.**
+
+[Architecture](#-module-composition) · [Module contracts](#-module-contracts) · [Quick start](#-quick-start) · [Design notes](#-design-notes)
 
 </div>
 
----
+> [!NOTE]
+> This is a learning/lab scaffold with CI validation. It is not represented as deployed Azure infrastructure. The historical `envirnment/` and child-module directory spellings are retained to avoid breaking existing references.
 
-# Terraform Reusable Modules — Azure
+## Why reusable modules?
 
-> **Status:** Terraform learning project with typed module contracts, root composition, outputs, secure storage defaults, example inputs and GitHub Actions validation. This is a lab scaffold; no Azure deployment is claimed.
+A reusable module should expose a predictable contract, hide repetitive resource details and make it easy for a root module to compose infrastructure for a specific environment. This repository demonstrates that pattern with resource groups, virtual networks and storage accounts.
 
-## Purpose
-
-Demonstrate how a Terraform root module composes reusable Azure child modules using typed map/object inputs and exposes stable outputs for downstream stacks.
-
-## Architecture
+## Module composition
 
 ```mermaid
 flowchart TB
-  Vars[Environment inputs] --> Root[envirnment/dev root module]
-  Root --> RG[Resource Group module]
-  Root --> VNet[Virtual Network module]
-  Root --> Storage[Storage Account module]
-  RG --> Outputs[Root outputs]
-  VNet --> Outputs
-  Storage --> Outputs
+  Inputs[Environment tfvars] --> Root[envirnment/dev root]
+  Root --> RG[Resource group module]
+  Root --> VNet[Virtual network module]
+  Root --> Storage[Storage account module]
+  RG --> IDs[Typed outputs]
+  VNet --> IDs
+  Storage --> IDs
+  IDs --> Consumers[Root outputs / downstream stacks]
 ```
 
-## Repository layout
+## Module catalogue
 
-- child/azurem_resource_group — resource group module
-- child/azurem_vnet — virtual network module
-- child/azurerm_storage_account — storage account module
-- envirnment/dev — environment root module; historical directory spelling retained to avoid breaking references
-- .github/workflows/terraform-ci.yml — formatting, validation and advisory Checkov scan
+| Module path | Responsibility | Interface pattern |
+|---|---|---|
+| `child/azurem_resource_group` | Create resource groups | Typed map/object input + `for_each` |
+| `child/azurem_vnet` | Create virtual networks | Typed map/object input + `for_each` |
+| `child/azurerm_storage_account` | Create StorageV2 accounts | Typed map/object input + `for_each` |
+| `envirnment/dev` | Compose child modules | Environment variables and aggregated outputs |
 
-## Module contracts
+Child modules expose maps of resource IDs and names; the root module composes and re-exports outputs so downstream code does not need to know every child resource address.
 
-All child modules use typed map(object(...)) inputs and for_each, so callers can create multiple resources using stable logical keys. Resource group, VNet and storage account modules expose maps of resource IDs and names; the root module aggregates resource names.
+## Quick start
 
-## Prerequisites
+### Prerequisites
 
-- Terraform CLI 1.6+
-- Azure CLI authenticated to a non-production test subscription
-- Azure permissions to create resource groups, VNets and storage accounts
+- Terraform CLI 1.6+.
+- Azure CLI authenticated to a non-production subscription for cloud planning.
+- Permissions to create the configured resource groups, VNets and storage accounts.
 
-## Configure and validate
-
-From the repository root:
+### Configure inputs
 
 ```bash
 cp envirnment/dev/terraform.tfvars.example envirnment/dev/terraform.tfvars
+```
+
+Review every variable. Replace the example Storage account name with a globally unique 3–24 character lowercase alphanumeric name.
+
+### Validate
+
+```bash
 terraform -chdir=envirnment/dev init
 terraform -chdir=envirnment/dev fmt -check -recursive
 terraform -chdir=envirnment/dev validate
 terraform -chdir=envirnment/dev plan
 ```
 
-Edit the example storage account name before planning. Azure Storage account names are globally unique and must contain 3–24 lowercase letters and numbers. Ensure every resource uses the intended resource group and region.
+Review the plan and estimated cost before any apply. The repository does not configure a shared remote-state backend; do not use local state as a team or production state solution.
 
-Review the complete plan and estimated cost before applying. This repository does not configure a remote state backend; do not use this root as a shared or production state store.
+## Design notes
 
-## Security notes
+- Typed inputs catch invalid caller shapes earlier than loosely typed variables.
+- `for_each` with stable logical keys makes resource identity easier to reason about than positional indexing.
+- Outputs should expose useful identifiers, not leak sensitive values.
+- Secure storage defaults intentionally disable public network access and shared-key access. A consuming workload needs an approved private connectivity path and Microsoft Entra data-plane authorization.
+- Remote state, locking, role assignments, private endpoints and private DNS are deployment-level concerns that must be designed for the target environment.
 
-- Storage accounts default to HTTPS-only, TLS 1.2, shared-key access disabled and public network access disabled.
-- These storage settings require a private endpoint/VNet path or another approved private connectivity design before workloads can access the account. The module does not silently expose storage publicly.
-- Use remote state with access controls, encryption, versioning and locking before team use.
-- Never commit terraform.tfstate files, plan files, credentials or real terraform.tfvars.
-- The misspelled historical directory names are retained for compatibility; a future breaking cleanup should rename them consistently.
+## CI and evidence
 
-## CI
+GitHub Actions runs formatting, backend-free initialization, validation and an advisory Checkov scan. CI does not create Azure resources. Review [Actions](../../actions) for the latest execution evidence.
 
-GitHub Actions checks formatting, initializes the environment without a remote backend, validates the composed configuration and runs an advisory Checkov scan. Triage Checkov findings before treating the baseline as a blocking security gate. CI does not deploy Azure resources.
+## Repository layout
 
-## Author
+```text
+child/
+  azurem_resource_group/
+  azurem_vnet/
+  azurerm_storage_account/
+envirnment/dev/
+  main.tf
+  variables.tf
+  outputs.tf
+  terraform.tfvars.example
+.github/workflows/terraform-ci.yml
+```
 
-MD Amirul Haque · [GitHub profile](https://github.com/haqueamir70-coder) · [LinkedIn](https://www.linkedin.com/in/md-amirul-haque/)
+## Documentation
 
+- [Architecture and interview guide](docs/README.md)
+- [Zero-to-hero guide](docs/ZERO-TO-HERO.md)
+- [Advanced module-design Q&A](docs/ADVANCED-INTERVIEW-BANK.md)
 
-## Architecture and interview preparation
+## Maintainer
 
-See the [architecture diagram and interview questions](docs/README.md) for the repository-specific design walkthrough and technical interview guide.
+**MD Amirul Haque** · [GitHub](https://github.com/haqueamir70-coder) · [LinkedIn](https://www.linkedin.com/in/md-amirul-haque/)
+
+<sub>Good modules are products: stable contracts, clear outputs and safe defaults.</sub>
