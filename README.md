@@ -1,3 +1,15 @@
+<div align="center">
+
+<img src="https://capsule-render.vercel.app/api?type=waving&color=0:172554,50:7C3AED,100:38BDF8&height=190&section=header&text=Terraform+Reusable+Azure+Modules&fontSize=32&fontColor=ffffff&animation=fadeIn" alt="Terraform Reusable Azure Modules project banner" width="100%" />
+
+<img src="https://readme-typing-svg.demolab.com/?font=Inter&weight=600&size=16&pause=1600&color=38BDF8&center=true&vCenter=true&width=900&height=36&lines=Terraform+Reusable+Azure+Modules+%E2%80%A2+Architecture+%E2%80%A2+Automation+%E2%80%A2+Security" alt="Animated project focus line" />
+
+![Terraform](https://img.shields.io/badge/Infrastructure+as+Code-844FBA?style=for-the-badge&logo=terraform&logoColor=white) ![Azure](https://img.shields.io/badge/Microsoft+Azure-0078D4?style=for-the-badge&logo=microsoftazure&logoColor=white) ![Modules](https://img.shields.io/badge/Reusable+Architecture-0F766E?style=for-the-badge)
+
+</div>
+
+---
+
 # Terraform Reusable Modules — Azure
 
 > **Status:** Terraform learning project with typed module contracts, root composition, outputs, secure storage defaults, example inputs and GitHub Actions validation. This is a lab scaffold; no Azure deployment is claimed.
